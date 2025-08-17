@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cameron’s Grade 2 Math</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .bg-sunrise {
+      background: radial-gradient(1200px 600px at 10% 10%, #fff7ed 0%, rgba(255,255,255,0) 40%),
+                  radial-gradient(800px 500px at 90% 10%, #fdf4ff 0%, rgba(255,255,255,0) 45%),
+                  linear-gradient(135deg, #a5b4fc 0%, #f0abfc 40%, #fda4af 100%);
+    }
+    @keyframes popIn { 0%{transform:scale(0.9);opacity:0}60%{transform:scale(1.03);opacity:1}100%{transform:scale(1)} }
+    @keyframes shake { 0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)} }
+    .confetti-piece { position: fixed; width: 10px; height: 10px; will-change: transform, opacity; pointer-events: none; border-radius: 2px; opacity: 0.9; }
+    @keyframes confettiFly { 0%{transform:translate(0,0) rotate(0deg);opacity:1}80%{opacity:1}100%{transform:translate(var(--dx),var(--dy)) rotate(var(--rot));opacity:0} }
+    .burst { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; }
+    .burst::before { content: ""; width: 40px; height: 40px; border-radius: 9999px; background: radial-gradient(circle,#fde68a 0%, rgba(253,230,138,0.6) 60%, rgba(253,230,138,0) 70%); animation: burstGrow 700ms ease-out forwards; filter: blur(0.5px); }
+    @keyframes burstGrow { 0%{transform:scale(0.2);opacity:0}50%{transform:scale(1.6);opacity:1}100%{transform:scale(2.2);opacity:0} }
+    .glow { box-shadow: 0 0 0 6px rgba(255,255,255,0.25), 0 0 30px rgba(255,255,255,0.4) inset; }
+    .cat-card:hover { transform: translateY(-2px) rotate(-0.4deg); }
+    /* SVG coin sizing */
+    .coin-svg { width: 64px; height: 64px; display:inline-block; }
+    @media (min-width: 640px){ .coin-svg { width: 72px; height: 72px; } }
+  </style>
+</head>
+<body class="min-h-screen bg-sunrise text-slate-800 antialiased">
+  <div class="max-w-3xl mx-auto px-4 py-6 md:py-10">
+
+    <!-- Landing / Category Selection Page -->
+    <section id="landingPage" class="space-y-6 animate-[popIn_600ms_ease]">
+      <header class="text-center mb-2">
+        <h1 class="text-3xl font-bold">Hi, Cameron! What would you like to learn today?</h1>
+        <p class="mt-2 text-slate-700">Pick a topic to start your math adventure! Tap a card 👇</p>
+      </header>
+
+      <!-- Question Count Control -->
+      <div class="bg-white/80 backdrop-blur-md rounded-2xl shadow p-4 flex items-center gap-4">
+        <div class="text-2xl">🎯</div>
+        <div class="flex-1">
+          <label for="countSlider" class="block text-sm font-semibold text-slate-700">Number of questions</label>
+          <input id="countSlider" type="range" min="5" max="25" step="1" value="10" class="w-full accent-fuchsia-500" oninput="updateCountLabel(this.value)" />
+        </div>
+        <div class="text-center">
+          <div class="text-xs text-slate-500">Questions</div>
+          <div id="countLabel" class="text-xl font-extrabold">10</div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <!-- Operations -->
+        <button onclick="uiClick(); startCategory('operations')" class="cat-card group w-full text-left p-4 rounded-2xl bg-white/80 backdrop-blur-lg shadow hover:shadow-lg transition will-change-transform">
+          <div class="flex items-center gap-4">
+            <div class="shrink-0 text-4xl">➕➖</div>
+            <div>
+              <div class="text-lg font-extrabold">Addition & Subtraction</div>
+              <div class="text-sm text-slate-600">Up to 20, count on, count back</div>
+            </div>
+          </div>
+        </button>
+        <!-- Fractions & Money -->
+        <button onclick="uiClick(); startCategory('money')" class="cat-card group w-full text-left p-4 rounded-2xl bg-white/80 backdrop-blur-lg shadow hover:shadow-lg transition">
+          <div class="flex items-center gap-4">
+            <div class="shrink-0 text-4xl">🪙💰</div>
+            <div>
+              <div class="text-lg font-extrabold">Fractions & Money</div>
+              <div class="text-sm text-slate-600">Coins & simple totals</div>
+            </div>
+          </div>
+        </button>
+        <!-- Patterns & Equality -->
+        <button onclick="uiClick(); startCategory('patterns')" class="cat-card group w-full text-left p-4 rounded-2xl bg-white/80 backdrop-blur-lg shadow hover:shadow-lg transition">
+          <div class="flex items-center gap-4">
+            <div class="shrink-0 text-4xl">🔁⚖️</div>
+            <div>
+              <div class="text-lg font-extrabold">Patterns & Equality</div>
+              <div class="text-sm text-slate-600">What comes next? Balance =</div>
+            </div>
+          </div>
+        </button>
+        <!-- Data & Charts -->
+        <button onclick="uiClick(); startCategory('data')" class="cat-card group w-full text-left p-4 rounded-2xl bg-white/80 backdrop-blur-lg shadow hover:shadow-lg transition">
+          <div class="flex items-center gap-4">
+            <div class="shrink-0 text-4xl">📊📈</div>
+            <div>
+              <div class="text-lg font-extrabold">Data & Charts</div>
+              <div class="text-sm text-slate-600">Read simple charts & compare</div>
+            </div>
+          </div>
+        </button>
+      </div>
+    </section>
+
+    <!-- Game Section (hidden initially) -->
+    <section id="gameSection" class="hidden">
+      <!-- Top bar with Home/Exit -->
+      <div class="flex items-center justify-between mb-4">
+        <button class="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-white/80 shadow hover:shadow-md transition text-sm font-semibold" onclick="uiClick(); exitToHome()">🏠 Back to topics</button>
+        <div class="text-xs text-white/90">Good luck, Cameron! 🌟</div>
+      </div>
+
+      <header class="text-center mb-6 md:mb-8 animate-[popIn_600ms_ease]">
+        <div class="inline-flex items-center gap-3 px-5 py-2.5 rounded-2xl bg-white/70 backdrop-blur-md shadow-lg">
+          <span class="text-2xl md:text-3xl">👋</span>
+          <h1 class="text-xl md:text-2xl font-bold tracking-tight" id="greeting">Hi, Cameron!</h1>
+        </div>
+        <p class="mt-3 text-sm md:text-base text-slate-700" id="greetingSub">You’ll get quick questions. Tap the right answer and watch the celebration! 🎉</p>
+      </header>
+      <!-- Progress Tracker -->
+      <div class="mb-5 md:mb-6">
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-2">
+            <span class="text-lg">⭐</span>
+            <span id="scoreLabel" class="text-sm md:text-base font-semibold">Correct: 0 / 10</span>
+          </div>
+          <div id="qCounter" class="text-xs md:text-sm text-slate-700">Question 1 of 10</div>
+        </div>
+        <div id="stars" class="flex flex-wrap gap-1.5 md:gap-2"></div>
+      </div>
+      <main class="relative">
+        <div id="card" class="relative bg-white/80 backdrop-blur-md rounded-3xl shadow-2xl p-6 lg:p-8 border border-white/60 animate-[popIn_600ms_ease]">
+          <div class="absolute -top-4 -left-4 bg-white rounded-2xl px-3 py-1.5 text-xs md:text-sm shadow glow" id="categoryBadge">Grade 2 •</div>
+          <div class="text-center">
+            <div id="questionText" class="text-3xl md:text-4xl font-black tracking-tight drop-shadow-sm select-none"></div>
+          </div>
+          <div id="answers" class="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4"></div>
+          <!-- Visualization area for categories that need it -->
+          <div id="viz" class="mt-4"></div>
+          <p class="mt-5 text-center text-xs md:text-sm text-slate-600">Tip: Try counting on your fingers or in your head. You got this! 💪</p>
+          <div id="burst" class="burst hidden"></div>
+        </div>
+        <div id="confettiLayer" class="pointer-events-none"></div>
+        <!-- Centered modal -->
+        <div id="endModal" class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden flex items-center justify-center p-4 z-20">
+          <div class="w-full max-w-md bg-white rounded-3xl shadow-2xl p-8 text-center">
+            <div class="text-6xl">🏆</div>
+            <h2 class="mt-2 text-2xl md:text-3xl font-extrabold">Great job, Cameron!</h2>
+            <p id="finalText" class="mt-2 text-slate-700"></p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-5">
+              <button id="playAgain" class="py-3 rounded-2xl text-lg font-bold bg-gradient-to-r from-indigo-400 via-fuchsia-400 to-rose-400 text-white shadow-lg active:scale-95 transition" onclick="uiClick()">Play again</button>
+              <button class="py-3 rounded-2xl text-lg font-bold bg-white text-slate-800 border border-slate-200 shadow active:scale-95 transition" onclick="uiClick(); exitToHome(true)">Back to topics</button>
+            </div>
+          </div>
+        </div>
+      </main>
+    </section>
+
+    <footer class="mt-8 text-center text-xs md:text-sm text-white/90">
+      Made with 💜 for Cameron — keep practicing a little every day!
+    </footer>
+  </div>
+
+  <script>
+    // --- Simple WebAudio sound effects ---
+    let audioCtx = null;
+    function getCtx(){ if(!audioCtx){ audioCtx = new (window.AudioContext||window.webkitAudioContext)(); } return audioCtx; }
+    function beep({freq=600, dur=120, type='sine', vol=0.1}){
+      const ctx = getCtx();
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = type; o.frequency.value = freq;
+      o.connect(g); g.connect(ctx.destination);
+      g.gain.setValueAtTime(vol, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + dur/1000);
+      o.start(); o.stop(ctx.currentTime + dur/1000);
+    }
+    function uiClick(){ try{ getCtx().resume(); }catch{} beep({freq:300, dur:70, type:'square', vol:0.06}); }
+    function successJingle(){
+      try{ getCtx().resume(); }catch{}
+      const notes=[523.25,659.25,783.99];
+      notes.forEach((f,i)=> setTimeout(()=>beep({freq:f,dur:120,type:'triangle',vol:0.08}), i*110));
+    }
+    function softBloop(){ try{ getCtx().resume(); }catch{} beep({freq:220,dur:150,type:'sine',vol:0.05}); setTimeout(()=>beep({freq:180,dur:160,type:'sine',vol:0.04}),120); }
+
+    // --- Quiz logic ---
+    let totalQuestions = 10; // dynamic from slider
+    let currentIndex = 0, score = 0, questions = [], category = null;
+
+    const landing = document.getElementById('landingPage');
+    const game = document.getElementById('gameSection');
+    const categoryBadge = document.getElementById('categoryBadge');
+    const scoreLabel = document.getElementById('scoreLabel');
+    const qCounter = document.getElementById('qCounter');
+    const starsEl = document.getElementById('stars');
+    const questionText = document.getElementById('questionText');
+    const answersEl = document.getElementById('answers');
+    const vizEl = document.getElementById('viz');
+    const card = document.getElementById('card');
+    const burst = document.getElementById('burst');
+    const confettiLayer = document.getElementById('confettiLayer');
+    const endModal = document.getElementById('endModal');
+    const finalText = document.getElementById('finalText');
+    const playAgain = document.getElementById('playAgain');
+    const countSlider = document.getElementById('countSlider');
+    const countLabel = document.getElementById('countLabel');
+
+    function updateCountLabel(v){ countLabel.textContent = v; totalQuestions = parseInt(v,10); }
+
+    function startCategory(cat) {
+      category = cat;
+      landing.classList.add('hidden');
+      game.classList.remove('hidden');
+      categoryBadge.textContent = `Grade 2 • ${ {
+        'operations': 'Add-Subtract',
+        'money': 'Fractions & Money',
+        'patterns': 'Patterns & Equality',
+        'data': 'Data & Charts'
+      }[cat] }`;
+      resetGame();
+    }
+
+    function exitToHome(fromModal=false){
+      endModal.classList.add('hidden');
+      game.classList.add('hidden');
+      landing.classList.remove('hidden');
+      category = null; currentIndex = 0; score = 0;
+      scoreLabel.textContent = `Correct: 0 / ${totalQuestions}`;
+      qCounter.textContent = `Question 1 of ${totalQuestions}`;
+      starsEl.innerHTML = '';
+      vizEl.innerHTML = '';
+      questionText.textContent = '';
+    }
+
+    function randInt(min,max){return Math.floor(Math.random()*(max-min+1))+min;}
+    function shuffle(a){for(let i=a.length-1;i>0;i--){const j=randInt(0,i);[a[i],a[j]]=[a[j],a[i]];}return a;}
+    function formatMoney(cents){ if (cents>=100){ return `$${(cents/100).toFixed(2)}`; } return `${cents}¢`; }
+
+    // Inline SVG coins (photo-style with metallic gradients)
+    function svgDime(){return `
+      <svg class='coin-svg' viewBox='0 0 100 100' aria-label='dime'>
+        <defs>
+          <radialGradient id='gS' cx='30%' cy='30%'>
+            <stop offset='0%' stop-color='#ffffff'/>
+            <stop offset='60%' stop-color='#bfc6ce'/>
+            <stop offset='100%' stop-color='#8c939b'/>
+          </radialGradient>
+          <linearGradient id='rimS' x1='0' y1='0' x2='1' y2='1'>
+            <stop offset='0%' stop-color='#f5f7fa'/>
+            <stop offset='100%' stop-color='#aeb6bf'/>
+          </linearGradient>
+        </defs>
+        <circle cx='50' cy='50' r='46' fill='url(#rimS)'/>
+        <circle cx='50' cy='50' r='40' fill='url(#gS)'/>
+        <text x='50' y='58' font-size='26' font-weight='800' text-anchor='middle' fill='#2b2f33'>10¢</text>
+      </svg>`}
+    function svgQuarter(){return `
+      <svg class='coin-svg' viewBox='0 0 100 100' aria-label='quarter'>
+        <defs>
+          <radialGradient id='gQ' cx='35%' cy='30%'>
+            <stop offset='0%' stop-color='#ffffff'/>
+            <stop offset='60%' stop-color='#c7ced6'/>
+            <stop offset='100%' stop-color='#949aa3'/>
+          </radialGradient>
+          <linearGradient id='rimQ' x1='0' y1='0' x2='1' y2='1'>
+            <stop offset='0%' stop-color='#f5f7fa'/>
+            <stop offset='100%' stop-color='#b3bac2'/>
+          </linearGradient>
+        </defs>
+        <circle cx='50' cy='50' r='46' fill='url(#rimQ)'/>
+        <circle cx='50' cy='50' r='40' fill='url(#gQ)'/>
+        <text x='50' y='58' font-size='26' font-weight='800' text-anchor='middle' fill='#2b2f33'>25¢</text>
+      </svg>`}
+    function svgLoonie(){return `
+      <svg class='coin-svg' viewBox='0 0 100 100' aria-label='loonie'>
+        <defs>
+          <radialGradient id='gL' cx='30%' cy='30%'>
+            <stop offset='0%' stop-color='#fff4cc'/>
+            <stop offset='60%' stop-color='#e0b84f'/>
+            <stop offset='100%' stop-color='#b3892a'/>
+          </radialGradient>
+          <linearGradient id='rimL' x1='0' y1='0' x2='1' y2='1'>
+            <stop offset='0%' stop-color='#fff1b3'/>
+            <stop offset='100%' stop-color='#d1a743'/>
+          </linearGradient>
+        </defs>
+        <circle cx='50' cy='50' r='46' fill='url(#rimL)'/>
+        <circle cx='50' cy='50' r='40' fill='url(#gL)'/>
+        <text x='50' y='58' font-size='28' font-weight='900' text-anchor='middle' fill='#5a4410'>$1</text>
+      </svg>`}
+    function svgToonie(){return `
+      <svg class='coin-svg' viewBox='0 0 100 100' aria-label='toonie'>
+        <defs>
+          <radialGradient id='outerT' cx='30%' cy='30%'>
+            <stop offset='0%' stop-color='#f8fbff'/>
+            <stop offset='60%' stop-color='#c7ced6'/>
+            <stop offset='100%' stop-color='#949aa3'/>
+          </radialGradient>
+          <radialGradient id='innerT' cx='30%' cy='30%'>
+            <stop offset='0%' stop-color='#fff4cc'/>
+            <stop offset='60%' stop-color='#e0b84f'/>
+            <stop offset='100%' stop-color='#b3892a'/>
+          </radialGradient>
+        </defs>
+        <circle cx='50' cy='50' r='46' fill='url(#outerT)'/>
+        <circle cx='50' cy='50' r='30' fill='url(#innerT)'/>
+        <text x='50' y='58' font-size='28' font-weight='900' text-anchor='middle' fill='#5a4410'>$2</text>
+      </svg>`}
+
+    function coinSVG(value){
+      if (value===10) return svgDime();
+      if (value===25) return svgQuarter();
+      if (value===100) return svgLoonie();
+      if (value===200) return svgToonie();
+      return '';
+    }
+
+    function makeQ() {
+      if (category === 'operations') {
+        const isAdd = Math.random()<0.5, a=randInt(0,20), b=isAdd?randInt(0,20-a):randInt(0,a);
+        const ans = isAdd ? a+b : a-b; const op = isAdd?'+' : '−';
+        const set = new Set([ans]);
+        while(set.size<3){ let d=ans+randInt(-3,3); if(d<0||d>20||set.has(d)) d=randInt(0,20); set.add(d); }
+        return {text:`${a} ${op} ${b} = ?`, ans, options: shuffle([...set])};
+      }
+      if (category === 'money') {
+        // Random coin mix: dime(10), quarter(25), loonie(100), toonie(200)
+        const DENOMS = [10,25,100,200];
+        const coinCount = randInt(2,6);
+        const coins = Array.from({length:coinCount},()=> DENOMS[randInt(0,DENOMS.length-1)]);
+        const ans = coins.reduce((s,v)=>s+v,0);
+        const viz = `<div class='flex flex-wrap justify-center gap-3'>${coins.map(v=>coinSVG(v)).join('')}</div>`;
+        const set = new Set([ans]);
+        const deltas = [10,25,50,75,100,-10,-25,-50];
+        while(set.size<3){ let d = ans + deltas[randInt(0,deltas.length-1)]; if(d<=0||d>500||set.has(d)) d = randInt(5,500); set.add(d); }
+        return {text: 'How much money is shown?', ans, options: shuffle([...set]), vizHTML: viz};
+      }
+      if (category === 'patterns') {
+        const start = randInt(1,10), step = randInt(1,5), idx = randInt(3,6);
+        const seq = Array.from({length:idx},(_,i)=> start + i*step);
+        const next = start + idx*step;
+        const text = `What comes next: ${seq.join(', ')} , ... ?`;
+        const opts = new Set([next]);
+        while(opts.size<3){ opts.add(next + randInt(-3,3)); }
+        return {text, ans: next, options: shuffle([...opts])};
+      }
+      if (category === 'data') {
+        const a = randInt(1,6), b = randInt(1,6), c = randInt(1,6);
+        const largest = Math.max(a,b,c);
+        const ans = largest===a?'A':largest===b?'B':'C';
+        const bar = (label,val)=>`<div class='flex flex-col items-center gap-1'>
+            <div class='w-6 text-center text-xs font-bold'>${label}</div>
+            <div class='w-10 h-28 bg-slate-100 rounded-xl flex items-end overflow-hidden'>
+              <div class='w-full bg-gradient-to-t from-fuchsia-300 to-indigo-300' style='height:${val*18}px'></div>
+            </div>
+            <div class='text-xs text-slate-600'>${val}</div>
+          </div>`;
+        const viz = `<div class='flex justify-center gap-6 items-end mt-2'>${bar('A',a)}${bar('B',b)}${bar('C',c)}</div>`;
+        const text = 'Look at the bars. Which has the most?';
+        return {text, ans, options: shuffle(['A','B','C']), vizHTML: viz};
+      }
+    }
+
+    function build() { questions = Array.from({length: totalQuestions}, makeQ); }
+
+    function renderStars(){
+      starsEl.innerHTML='';
+      for(let i=0;i<totalQuestions;i++){
+        const d=document.createElement('div');
+        d.className=`h-4 md:h-5 w-4 md:w-5 rounded-full ${i<score?'bg-amber-300':'bg-white/70'} border border-white/70 shadow`;
+        starsEl.appendChild(d);
+      }
+    }
+
+    function renderQ(){
+      const q = questions[currentIndex];
+      qCounter.textContent = `Question ${currentIndex+1} of ${totalQuestions}`;
+      questionText.textContent = q.text;
+      // render visualization if present
+      if (q.vizHTML){ vizEl.innerHTML = q.vizHTML; } else { vizEl.innerHTML = ''; }
+      answersEl.innerHTML='';
+      q.options.forEach(opt=>{
+        const btn=document.createElement('button');
+        btn.className='w-full py-4 text-2xl rounded-2xl bg-white/90 shadow hover:scale-95 transition focus:outline-none focus:ring-2 focus:ring-indigo-200';
+        btn.textContent = (category==='money') ? formatMoney(opt) : opt;
+        btn.dataset.val = opt; // numeric
+        btn.onclick = e => { uiClick(); const val = (category==='money') ? parseInt(e.currentTarget.dataset.val,10) : (isNaN(e.currentTarget.textContent)? e.currentTarget.textContent : parseInt(e.currentTarget.textContent,10)); handleAnswer(val, e.currentTarget); };
+        answersEl.appendChild(btn);
+      });
+    }
+
+    function disableAnswers(){ answersEl.querySelectorAll('button').forEach(b=>{ b.disabled=true; b.classList.add('opacity-70'); }); }
+
+    function handleAnswer(sel, btn){
+      const q = questions[currentIndex];
+      disableAnswers();
+      const correct = sel == q.ans; // numeric or string (A/B/C)
+      if (correct) {
+        score++; scoreLabel.textContent = `Correct: ${score} / ${totalQuestions}`; renderStars(); showCorrect(btn); successJingle();
+      } else { showIncorrect(); softBloop(); }
+      setTimeout(nextQ, 800);
+    }
+
+    function showCorrect(btn){
+      burst.classList.remove('hidden'); setTimeout(()=>burst.classList.add('hidden'),700);
+      const r = btn.getBoundingClientRect();
+      launchConf(r.left + r.width/2, r.top + r.height/2);
+    }
+    function showIncorrect(){
+      card.classList.add('animate-[shake_450ms_ease]'); setTimeout(()=>card.classList.remove('animate-[shake_450ms_ease]'),450);
+      const cloud=document.createElement('div'); cloud.textContent='🌥️'; cloud.style.position='absolute'; cloud.style.top='10px'; cloud.style.right='10px'; cloud.style.fontSize='28px'; cloud.style.opacity='0'; cloud.style.transition='opacity 200ms';
+      card.appendChild(cloud); requestAnimationFrame(()=>cloud.style.opacity='1'); setTimeout(()=>{cloud.style.opacity='0'; cloud.remove();},600);
+    }
+    function launchConf(x,y){
+      const colors=['#fca5a5','#fdba74','#fcd34d','#86efac','#93c5fd','#c4b5fd','#f0abfc'];
+      for(let i=0;i<60;i++){
+        const p=document.createElement('div'); p.className='confetti-piece'; const size=Math.random()*6+6; p.style.width=size+'px'; p.style.height=(size*0.6)+'px'; p.style.background=colors[Math.floor(Math.random()*colors.length)]; p.style.left=x+'px'; p.style.top=y+'px';
+        const angle=Math.random()*2*Math.PI, speed=80+Math.random()*140; p.style.setProperty('--dx',(Math.cos(angle)*speed)+'px'); p.style.setProperty('--dy',(Math.sin(angle)*speed+140)+'px'); p.style.setProperty('--rot',(Math.floor(Math.random()*720)-360)+'deg'); p.style.animation=`confettiFly ${700+Math.random()*500}ms ease-out forwards`;
+        confettiLayer.appendChild(p); setTimeout(()=>p.remove(),1400);
+      }
+    }
+    function nextQ(){ currentIndex++; if(currentIndex>=totalQuestions) return endGame(); renderQ(); }
+    function endGame(){
+      finalText.textContent = `You scored ${score} out of ${totalQuestions}.`;
+      endModal.classList.remove('hidden');
+      const cx=window.innerWidth/2, cy=window.innerHeight/2; launchConf(cx,cy); setTimeout(()=>launchConf(cx,cy),250);
+    }
+    playAgain.onclick = ()=>{ endModal.classList.add('hidden'); resetGame(); };
+    function resetGame(){ currentIndex=0; score=0; scoreLabel.textContent=`Correct: ${score} / ${totalQuestions}`; build(); renderStars(); renderQ(); }
+  </script>
+</body>
+</html>
